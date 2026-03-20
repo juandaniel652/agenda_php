@@ -1,0 +1,32 @@
+# ─────────────────────────────────────────────
+#  public/.htaccess  –  Apache rewrite rules
+#  Equivalente al routing automático de uvicorn
+# ─────────────────────────────────────────────
+
+Options -Indexes
+RewriteEngine On
+
+# ── Redirigir todo al index.php ───────────────
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
+
+# ── Headers de seguridad ──────────────────────
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-Frame-Options "DENY"
+Header always set X-XSS-Protection "1; mode=block"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+# ── Deshabilitar acceso a archivos sensibles ──
+<Files ".env">
+    Order allow,deny
+    Deny from all
+</Files>
+<Files "composer.json">
+    Order allow,deny
+    Deny from all
+</Files>
+<Files "composer.lock">
+    Order allow,deny
+    Deny from all
+</Files>
