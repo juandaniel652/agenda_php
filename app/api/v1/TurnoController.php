@@ -105,7 +105,7 @@ class TurnoController
     // GET /api/v1/turnos/{id}
     public function show(string $id): never
     {
-        Deps::getCurrentUser();
+        // Deps::getCurrentUser();  ← eliminar esta línea
         $turno = $this->turnoRepo->findById($id);
         if (!$turno) Response::notFound('Turno no encontrado');
         Response::success($turno);

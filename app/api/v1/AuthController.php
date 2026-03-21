@@ -66,7 +66,7 @@ class AuthController
             ->required('email')
             ->required('password')
             ->email('email')
-            ->string('password', 8, 100)
+            ->string('password', 6, 100)
             ->validate();
 
         // Verificar que el email no exista
@@ -135,7 +135,7 @@ class AuthController
         $data = Validator::fromBody()
             ->required('token')
             ->required('password')
-            ->string('password', 8, 100)
+            ->string('password', 6, 100)
             ->validate();
 
         $user = $this->userRepo->findByResetToken($data['token']);
