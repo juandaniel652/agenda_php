@@ -34,21 +34,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// ── Parsear URI ───────────────────────────────
+// ── Parsear URI (Versión Robusta para cPanel) ─────────────────
 $method = $_SERVER['REQUEST_METHOD'];
 $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri    = rtrim($uri, '/');
 
-// Esto limpia el path si la API está en una subcarpeta (como /api/)
-// Buscamos la posición de /v1/ para normalizar la ruta
-$posV1 = strpos($uri, '/v1/');
-if ($posV1 !== false) {
-    $uri = substr($uri, $posV1); // Esto deja la URI como /v1/health o /v1/auth/login
+// Buscamos dónde empieza el estándar /api/v1/
+$pos = strpos($uri, '/api/v1');
+if ($pos !== false) {
+    // Cortamos todo lo que haya antes de /api/v1
+    $uri = substr($uri, $pos); 
 }
 
+// Ahora $uri es siempre "/api/v1/recurso/accion"
 $segments = array_values(array_filter(explode('/', $uri)));
-// Ahora $segments[0] debería ser siempre 'v1'
-// /api/v1/turnos/disponibilidad → ['api','v1','turnos','disponibilidad']
+
+// Verificación de Debug para ti (puedes borrar esto luego)
+// if ($uri === '/api/v1/health') { (new HealthController())->check(); }
+
+$resource = $segments[2] ?? ''; // 'auth'
+$id       = $segments[3] ?? ''; // 'login'
+$action   = $segments[4] ?? null;
 
 // ── Health ────────────────────────────────────
 // Python: prefix="/health" → GET /api/v1/health
