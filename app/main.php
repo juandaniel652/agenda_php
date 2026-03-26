@@ -13,6 +13,12 @@
 //  - Rutas de turno reordenadas (las rutas fijas antes que las variables)
 // ─────────────────────────────────────────────
 
+require_once __DIR__ . '/../vendor/autoload.php';
+
+// ─────────────────────────────────────────────
+//  app/main.php – Router principal
+// ─────────────────────────────────────────────
+
 use App\Core\Response;
 use App\Api\V1\AuthController;
 use App\Api\V1\ClienteController;
