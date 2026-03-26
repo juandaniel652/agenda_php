@@ -1,21 +1,8 @@
 <?php
 require_once '/home2/androsnet/public_html/api/vendor/autoload.php';
-// ─────────────────────────────────────────────
-//  app/main.php  –  Router principal
-//  Espejo EXACTO de app/main.py
-//
-//  RUTAS NUEVAS vs versión anterior:
-//  - GET /turnos/menu
-//  - GET /turnos/disponibilidad
-//  - GET /turnos/sugerencias
-//
-//  CORRECCIONES:
-//  - TecnicoController ya no tiene sub-rutas de disponibilidad individual
-//  - Rutas de turno reordenadas (las rutas fijas antes que las variables)
-// ─────────────────────────────────────────────
 
 // ─────────────────────────────────────────────
-//  app/main.php – Router principal
+//  app/main.php  –  Router principal (Producción)
 // ─────────────────────────────────────────────
 
 use App\Core\Response;
@@ -25,160 +12,121 @@ use App\Api\V1\HealthController;
 use App\Api\V1\TecnicoController;
 use App\Api\V1\TurnoController;
 
-// ── Headers globales ──────────────────────────
+// ── Headers globales y CORS ───────────────────
 Response::setHeaders();
 
-// ── Preflight CORS ────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
 }
 
-// ── Parsear URI ───────────────────────────────
-$method = $_SERVER['REQUEST_METHOD'];
+// ── Parsear y Normalizar URI ──────────────────
+$method = strtoupper($_SERVER['REQUEST_METHOD']);
 $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri    = rtrim($uri, '/');
 
-// Normalizamos para que siempre empiece en /api/v1
+// Forzar que la ruta sea relativa a /api/v1
 $pos = strpos($uri, '/api/v1');
 if ($pos !== false) {
     $uri = substr($uri, $pos); 
 }
 
-// Convertimos a array y RE-INDEXAMOS con array_values
+// Convertir en array limpio de segmentos
 $segments = array_values(array_filter(explode('/', $uri)));
 
-// --- ASIGNACIÓN DINÁMICA SEGÚN POSICIÓN ---
-// Si la ruta es /api/v1/auth/login:
-// $segments[0] es 'api'
-// $segments[1] es 'v1'
-// $segments[2] es el RECURSO ('auth', 'clientes')
-// $segments[3] es el ID o ACCIÓN ('login', '123')
+/**
+ * Estructura esperada en $segments tras normalizar:
+ * [0] => 'api'
+ * [1] => 'v1'
+ * [2] => recurso (auth, clientes, turnos...)
+ * [3] => id o acción (login, register, 123-uuid...)
+ * [4] => sub-acción (cancelar, estado...)
+ */
 
-$resource = $segments[2] ?? ''; 
-$id       = $segments[3] ?? null; 
-$action   = $segments[4] ?? null; 
-
-// ── Validación de Seguridad ───────────────────
-if (($segments[0] ?? '') !== 'api' || ($segments[1] ?? '') !== 'v1') {
-    Response::notFound("Endpoint no encontrado: " . $uri);
-}
-
-// AHORA EL MATCH DE AUTH FUNCIONARÁ:
-if ($resource === 'auth') {
-    $ctrl = new AuthController();
-    match (true) {
-        $method === 'POST' && $id === 'login'    => $ctrl->login(),
-        $method === 'POST' && $id === 'register' => $ctrl->register(),
-        // ... resto de rutas
-        default => Response::notFound("Auth endpoint '{$id}' no encontrado"),
-    };
-}
-
-// ── Health ────────────────────────────────────
-// Python: prefix="/health" → GET /api/v1/health
-if ($uri === '/v1/health' || end($segments) === 'health') {
-    (new HealthController())->check();
-}
-
-// ── Root ─────────────────────────────────────
-if ($uri === '' || $uri === '/') {
-    Response::success([
-        'service' => 'agenda-php',
-        'status'  => 'running',
-        'version' => '1.0.0',
-    ]);
-}
-
-if (($segments[0] ?? '') !== 'v1') {
-    Response::notFound("Endpoint no encontrado: " . $uri);
-}
-
-// Ahora los recursos se corren un lugar:
-// --- ASIGNACIÓN CON LIMPIEZA ---
 $resource = isset($segments[2]) ? trim(strtolower($segments[2])) : ''; 
 $id       = isset($segments[3]) ? trim(strtolower($segments[3])) : null; 
 $action   = isset($segments[4]) ? trim(strtolower($segments[4])) : null; 
-$method   = strtoupper($_SERVER['REQUEST_METHOD']); // Forzamos MAYÚSCULAS
 
-// ─────────────────────────────────────────────
-//  AUTH  →  /api/v1/auth/{accion}
-// ─────────────────────────────────────────────
-if ($resource === 'auth') {
-    $ctrl = new AuthController();
-
-    match (true) {
-        $method === 'POST' && $id === 'login'           => $ctrl->login(),
-        $method === 'POST' && $id === 'register'        => $ctrl->register(),
-        $method === 'POST' && $id === 'forgot-password' => $ctrl->forgotPassword(),
-        $method === 'POST' && $id === 'reset-password'  => $ctrl->resetPassword(),
-        $method === 'GET'  && $id === 'me'              => $ctrl->me(),
-        $method === 'GET'  && $id === 'ping'            => Response::success(['auth' => 'ok']),
-        default => Response::notFound("Auth endpoint '{$id}' no encontrado en resource '{$resource}' para el metodo {$method}"),
-    };
+// ── Validación de Prefijo ─────────────────────
+if (($segments[0] ?? '') !== 'api' || ($segments[1] ?? '') !== 'v1') {
+    // Si la URI está vacía o es solo /, dar bienvenida
+    if (empty($segments)) {
+        Response::success([
+            'service' => 'agenda-php',
+            'status'  => 'running',
+            'version' => '1.0.0'
+        ]);
+    }
+    Response::notFound("Endpoint '{$uri}' no reconocido fuera de /api/v1");
 }
 
-// ─────────────────────────────────────────────
-//  CLIENTES  →  /api/v1/clientes
-// ─────────────────────────────────────────────
-if ($resource === 'clientes') {
-    $ctrl = new ClienteController();
+// ── Ruteo por Recurso ─────────────────────────
 
-    match (true) {
-        $method === 'GET'    && $id === null     => $ctrl->index(),
-        $method === 'GET'    && $id !== null     => $ctrl->show($id),
-        $method === 'POST'   && $id === null     => $ctrl->store(),
-        $method === 'PUT'    && $id !== null     => $ctrl->update($id),
-        $method === 'PATCH'  && $id !== null     => $ctrl->update($id),
-        $method === 'DELETE' && $id !== null     => $ctrl->destroy($id),
-        default => Response::notFound('Clientes endpoint no encontrado'),
-    };
-}
+match ($resource) {
+    // 1. HEALTH
+    'health' => (new HealthController())->check(),
 
-// ─────────────────────────────────────────────
-//  TÉCNICOS  →  /api/v1/tecnicos
-//  Sin sub-rutas individuales de disponibilidad
-//  (los horarios se manejan desde el PUT del técnico)
-// ─────────────────────────────────────────────
-if ($resource === 'tecnicos') {
-    $ctrl = new TecnicoController();
+    // 2. AUTH
+    'auth' => (function() use ($method, $id, $resource) {
+        $ctrl = new AuthController();
+        match (true) {
+            $method === 'POST' && $id === 'login'           => $ctrl->login(),
+            $method === 'POST' && $id === 'register'        => $ctrl->register(),
+            $method === 'POST' && $id === 'forgot-password' => $ctrl->forgotPassword(),
+            $method === 'POST' && $id === 'reset-password'  => $ctrl->resetPassword(),
+            $method === 'GET'  && $id === 'me'              => $ctrl->me(),
+            $method === 'GET'  && $id === 'ping'            => Response::success(['auth' => 'ok']),
+            default => Response::notFound("Acción '{$id}' no válida para el recurso '{$resource}'")
+        };
+    })(),
 
-    match (true) {
-        $method === 'GET'    && $id === null => $ctrl->index(),
-        $method === 'POST'   && $id === null => $ctrl->store(),
-        in_array($method, ['PUT', 'PATCH']) && $id !== null => $ctrl->update($id),
-        $method === 'DELETE' && $id !== null => $ctrl->destroy($id),
-        default => Response::notFound('Técnicos endpoint no encontrado'),
-    };
-}
+    // 3. CLIENTES
+    'clientes' => (function() use ($method, $id) {
+        $ctrl = new ClienteController();
+        match (true) {
+            $method === 'GET'    && $id === null     => $ctrl->index(),
+            $method === 'GET'    && $id !== null     => $ctrl->show($id),
+            $method === 'POST'   && $id === null     => $ctrl->store(),
+            in_array($method, ['PUT', 'PATCH']) && $id !== null => $ctrl->update($id),
+            $method === 'DELETE' && $id !== null     => $ctrl->destroy($id),
+            default => Response::notFound('Ruta de Clientes no válida')
+        };
+    })(),
 
-// ─────────────────────────────────────────────
-//  TURNOS  →  /api/v1/turnos
-//  IMPORTANTE: rutas fijas ANTES que /{id}
-//  para que 'menu','disponibilidad','sugerencias'
-//  no sean interpretadas como UUIDs
-// ─────────────────────────────────────────────
-if ($resource === 'turnos') {
-    $ctrl = new TurnoController();
+    // 4. TÉCNICOS
+    'tecnicos' => (function() use ($method, $id) {
+        $ctrl = new TecnicoController();
+        match (true) {
+            $method === 'GET'    && $id === null => $ctrl->index(),
+            $method === 'POST'   && $id === null => $ctrl->store(),
+            in_array($method, ['PUT', 'PATCH']) && $id !== null => $ctrl->update($id),
+            $method === 'DELETE' && $id !== null => $ctrl->destroy($id),
+            default => Response::notFound('Ruta de Técnicos no válida')
+        };
+    })(),
 
-    match (true) {
-        // ── Rutas fijas (sin ID) ───────────────────
-        $method === 'GET'  && $id === 'menu'           => $ctrl->menu(),
-        $method === 'GET'  && $id === 'disponibilidad' => $ctrl->disponibilidad(),
-        $method === 'GET'  && $id === 'sugerencias'    => $ctrl->sugerencias(),
+    // 5. TURNOS
+    'turnos' => (function() use ($method, $id, $action) {
+        $ctrl = new TurnoController();
+        match (true) {
+            // Rutas fijas
+            $method === 'GET'  && $id === 'menu'           => $ctrl->menu(),
+            $method === 'GET'  && $id === 'disponibilidad' => $ctrl->disponibilidad(),
+            $method === 'GET'  && $id === 'sugerencias'    => $ctrl->sugerencias(),
+            
+            // CRUD
+            $method === 'GET'  && $id === null             => $ctrl->index(),
+            $method === 'POST' && $id === null             => $ctrl->store(),
+            $method === 'GET'  && $id !== null && $action === null => $ctrl->show($id),
+            
+            // Acciones
+            $method === 'PATCH' && $id !== null && $action === 'cancelar' => $ctrl->cancelar($id),
+            $method === 'PATCH' && $id !== null && $action === 'estado'   => $ctrl->updateEstado($id),
+            
+            default => Response::notFound('Ruta de Turnos no válida')
+        };
+    })(),
 
-        // ── CRUD base ─────────────────────────────
-        $method === 'GET'  && $id === null             => $ctrl->index(),
-        $method === 'POST' && $id === null             => $ctrl->store(),
-        $method === 'GET'  && $id !== null && $action === null => $ctrl->show($id),
-
-        // ── Acciones sobre un turno ───────────────
-        $method === 'PATCH' && $id !== null && $action === 'cancelar' => $ctrl->cancelar($id),
-        $method === 'PATCH' && $id !== null && $action === 'estado'   => $ctrl->updateEstado($id),
-
-        default => Response::notFound('Turnos endpoint no encontrado'),
-    };
-}
-
-// ── Fallback ──────────────────────────────────
-Response::notFound("Endpoint '{$uri}' no encontrado");
+    // DEFAULT FALLBACK
+    default => Response::notFound("Recurso '{$resource}' no encontrado")
+};

@@ -28,7 +28,7 @@ class Session
         $db = $config['database'];
         // Host suele ser 'localhost' en cPanel, pero el user/pass llevan prefijo
         $dbName = $db['dbname'] ?? $db['name'] ?? null;
-        $dsn = "mysql:host={$db['host']};dbname={$dbName};charset=utf8mb4";
+        $dsn = "mysql:host={$db['host']};port={$db['port']};dbname={$db['name']};charset={$db['charset']}";
 
         try {
             self::$instance = new PDO($dsn, $db['user'], $db['password'], [

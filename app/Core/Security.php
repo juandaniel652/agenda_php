@@ -22,7 +22,7 @@ class Security
     private static function cfg(): array
     {
         if (!isset(self::$config)) {
-            $env          = require dirname(__DIR__, 1) . '/config/env.php';
+            $env = require dirname(__DIR__, 2) . '/config/env.php';
             self::$config = $env['jwt'];
         }
         return self::$config;
