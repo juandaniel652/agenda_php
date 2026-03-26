@@ -105,6 +105,9 @@ $action   = $segments[3] ?? null;
 if ($resource === 'auth') {
     $ctrl = new AuthController();
 
+    // Debug temporal: si sigue fallando, descomenta la línea de abajo para ver qué llega
+    // Response::json(["resource" => $resource, "id" => $id, "segments" => $segments]);
+
     match (true) {
         $method === 'POST' && $id === 'login'           => $ctrl->login(),
         $method === 'POST' && $id === 'register'        => $ctrl->register(),
@@ -112,7 +115,7 @@ if ($resource === 'auth') {
         $method === 'POST' && $id === 'reset-password'  => $ctrl->resetPassword(),
         $method === 'GET'  && $id === 'me'              => $ctrl->me(),
         $method === 'GET'  && $id === 'ping'            => Response::success(['auth' => 'ok']),
-        default => Response::notFound("Auth endpoint '{$id}' no encontrado"),
+        default => Response::notFound("Auth endpoint '{$id}' no encontrado en resource '{$resource}'"),
     };
 }
 
