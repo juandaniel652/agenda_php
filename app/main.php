@@ -39,17 +39,20 @@ $method = $_SERVER['REQUEST_METHOD'];
 $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri    = rtrim($uri, '/');
 
-$basePath = rtrim($_ENV['BASE_PATH'] ?? '', '/');
-if ($basePath && str_starts_with($uri, $basePath)) {
-    $uri = substr($uri, strlen($basePath));
+// Esto limpia el path si la API está en una subcarpeta (como /api/)
+// Buscamos la posición de /v1/ para normalizar la ruta
+$posV1 = strpos($uri, '/v1/');
+if ($posV1 !== false) {
+    $uri = substr($uri, $posV1); // Esto deja la URI como /v1/health o /v1/auth/login
 }
 
 $segments = array_values(array_filter(explode('/', $uri)));
+// Ahora $segments[0] debería ser siempre 'v1'
 // /api/v1/turnos/disponibilidad → ['api','v1','turnos','disponibilidad']
 
 // ── Health ────────────────────────────────────
 // Python: prefix="/health" → GET /api/v1/health
-if ($uri === '/api/v1/health' || $uri === '/health') {
+if ($uri === '/v1/health' || end($segments) === 'health') {
     (new HealthController())->check();
 }
 
@@ -62,13 +65,14 @@ if ($uri === '' || $uri === '/') {
     ]);
 }
 
-if (($segments[0] ?? '') !== 'api' || ($segments[1] ?? '') !== 'v1') {
-    Response::notFound('Endpoint no encontrado');
+if (($segments[0] ?? '') !== 'v1') {
+    Response::notFound("Endpoint no encontrado: " . $uri);
 }
 
-$resource = $segments[2] ?? '';
-$id       = $segments[3] ?? null;
-$action   = $segments[4] ?? null;
+// Ahora los recursos se corren un lugar:
+$resource = $segments[1] ?? ''; // 'auth', 'clientes', etc.
+$id       = $segments[2] ?? null;
+$action   = $segments[3] ?? null;
 
 // ─────────────────────────────────────────────
 //  AUTH  →  /api/v1/auth/{accion}
