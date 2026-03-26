@@ -7,7 +7,7 @@
 return [
 
     // ── Base de datos ─────────────────────────
-    'db' => [
+    'database' => [
         'driver'   => 'mysql',          // cambiar a 'pgsql' para PostgreSQL
         'host'     => $_ENV['DB_HOST']     ?? 'localhost',
         'port'     => $_ENV['DB_PORT']     ?? '3306',
