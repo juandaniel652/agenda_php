@@ -88,4 +88,4 @@ if (($_ENV['APP_DEBUG'] ?? 'false') === 'true') {
 }
 
 // ── Despachar al router ───────────────────────
-require __DIR__ . '/app/main.php';
+require_once '/home2/androsnet/public_html/api/app/main.php';
