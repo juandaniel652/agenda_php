@@ -10,7 +10,7 @@
 declare(strict_types=1);
 
 // ── Cargar .env antes de cualquier otra cosa ──
-$envFile = dirname(__DIR__) . '/.env';
+$envFile  = __DIR__ . '/.env';
 if (file_exists($envFile)) {
     foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
         if (str_starts_with(trim($line), '#') || !str_contains($line, '=')) continue;
@@ -21,7 +21,7 @@ if (file_exists($envFile)) {
 }
 
 // ── Autoloader (Composer) ─────────────────────
-$autoload = dirname(__DIR__) . '/vendor/autoload.php';
+$autoload = __DIR__ . '/vendor/autoload.php';
 if (!file_exists($autoload)) {
     http_response_code(500);
     echo json_encode(['detail' => 'Autoloader no encontrado. Ejecutá: composer install']);

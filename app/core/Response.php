@@ -74,7 +74,7 @@ class Response
      */
     public static function setHeaders(): void
     {
-        $config  = require dirname(__DIR__, 2) . '/config/env.php';
+        $config  = require dirname(__DIR__, 1) . '/config/env.php';
         $origins = $config['cors']['allowed_origins'];
         $origin  = $_SERVER['HTTP_ORIGIN'] ?? '';
 

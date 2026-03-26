@@ -23,7 +23,7 @@ class Session
             return self::$instance;
         }
 
-        $config = require dirname(__DIR__, 2) . '/config/env.php';
+        $config = require dirname(__DIR__, 1) . '/config/env.php';
         $db     = $config['db'];
 
         $dsn = match ($db['driver']) {
