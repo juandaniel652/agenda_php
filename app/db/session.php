@@ -23,7 +23,8 @@ class Session
             return self::$instance;
         }
 
-        $config = require dirname(__DIR__, 1) . '/config/env.php';
+        // dirname(__DIR__, 2) sube dos niveles: de 'app/Core' a la raíz 'api/'
+        $config = require dirname(__DIR__, 2) . '/config/env.php';
         $db     = $config['db'];
 
         $dsn = match ($db['driver']) {
