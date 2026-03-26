@@ -11,9 +11,9 @@ return [
         'driver'   => 'mysql',          // cambiar a 'pgsql' para PostgreSQL
         'host'     => $_ENV['DB_HOST']     ?? 'localhost',
         'port'     => $_ENV['DB_PORT']     ?? '3306',
-        'name'     => $_ENV['DB_NAME']     ?? 'agenda',
-        'user'     => $_ENV['DB_USER']     ?? 'root',
-        'password' => $_ENV['DB_PASSWORD'] ?? '',
+        'name'     => $_ENV['DB_NAME']     ?? 'androsne_agend0952pn',
+        'user'     => $_ENV['DB_USER']     ?? 'androsne_8agendnewml',
+        'password' => $_ENV['DB_PASSWORD'] ?? '%EbM%BLN)%?D',
         'charset'  => 'utf8mb4',
     ],
 

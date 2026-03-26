@@ -27,7 +27,8 @@ class Session
         $config = require '/home2/androsnet/public_html/api/config/env.php';
         $db = $config['database'];
         // Host suele ser 'localhost' en cPanel, pero el user/pass llevan prefijo
-        $dsn = "mysql:host={$db['host']};dbname={$db['dbname']};charset=utf8mb4";
+        $dbName = $db['dbname'] ?? $db['name'] ?? null;
+        $dsn = "mysql:host={$db['host']};dbname={$dbName};charset=utf8mb4";
 
         try {
             self::$instance = new PDO($dsn, $db['user'], $db['password'], [
