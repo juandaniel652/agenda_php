@@ -77,4 +77,4 @@ if (($_ENV['APP_DEBUG'] ?? 'false') === 'true') {
 }
 
 // ── Despachar al router ───────────────────────
-require dirname(__DIR__) . '/app/main.php';
+require __DIR__ . '/app/main.php';
