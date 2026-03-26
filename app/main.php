@@ -95,18 +95,17 @@ if (($segments[0] ?? '') !== 'v1') {
 }
 
 // Ahora los recursos se corren un lugar:
-$resource = $segments[1] ?? ''; // 'auth', 'clientes', etc.
-$id       = $segments[2] ?? null;
-$action   = $segments[3] ?? null;
+// --- ASIGNACIÓN CON LIMPIEZA ---
+$resource = isset($segments[2]) ? trim(strtolower($segments[2])) : ''; 
+$id       = isset($segments[3]) ? trim(strtolower($segments[3])) : null; 
+$action   = isset($segments[4]) ? trim(strtolower($segments[4])) : null; 
+$method   = strtoupper($_SERVER['REQUEST_METHOD']); // Forzamos MAYÚSCULAS
 
 // ─────────────────────────────────────────────
 //  AUTH  →  /api/v1/auth/{accion}
 // ─────────────────────────────────────────────
 if ($resource === 'auth') {
     $ctrl = new AuthController();
-
-    // Debug temporal: si sigue fallando, descomenta la línea de abajo para ver qué llega
-    // Response::json(["resource" => $resource, "id" => $id, "segments" => $segments]);
 
     match (true) {
         $method === 'POST' && $id === 'login'           => $ctrl->login(),
@@ -115,7 +114,7 @@ if ($resource === 'auth') {
         $method === 'POST' && $id === 'reset-password'  => $ctrl->resetPassword(),
         $method === 'GET'  && $id === 'me'              => $ctrl->me(),
         $method === 'GET'  && $id === 'ping'            => Response::success(['auth' => 'ok']),
-        default => Response::notFound("Auth endpoint '{$id}' no encontrado en resource '{$resource}'"),
+        default => Response::notFound("Auth endpoint '{$id}' no encontrado en resource '{$resource}' para el metodo {$method}"),
     };
 }
 
