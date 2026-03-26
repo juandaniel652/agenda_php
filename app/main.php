@@ -1,4 +1,5 @@
 <?php
+require_once '/home2/androsnet/public_html/api/vendor/autoload.php';
 // ─────────────────────────────────────────────
 //  app/main.php  –  Router principal
 //  Espejo EXACTO de app/main.py
