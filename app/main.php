@@ -39,26 +39,40 @@ $method = $_SERVER['REQUEST_METHOD'];
 $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri    = rtrim($uri, '/');
 
-// Limpiamos para que empiece siempre en /api/v1
+// Normalizamos para que siempre empiece en /api/v1
 $pos = strpos($uri, '/api/v1');
 if ($pos !== false) {
     $uri = substr($uri, $pos); 
 }
 
-// Convertimos a array: ["api", "v1", "auth", "login"]
+// Convertimos a array y RE-INDEXAMOS con array_values
 $segments = array_values(array_filter(explode('/', $uri)));
 
-// --- AJUSTE DE ÍNDICES AQUÍ ---
-$resource = $segments[2] ?? ''; // Debe ser 'auth', 'clientes', etc.
-$id       = $segments[3] ?? null; // Debe ser 'login', 'register' o un ID (123)
-$action   = $segments[4] ?? null; // Debe ser 'cancelar', 'estado', etc.
+// --- ASIGNACIÓN DINÁMICA SEGÚN POSICIÓN ---
+// Si la ruta es /api/v1/auth/login:
+// $segments[0] es 'api'
+// $segments[1] es 'v1'
+// $segments[2] es el RECURSO ('auth', 'clientes')
+// $segments[3] es el ID o ACCIÓN ('login', '123')
 
-// Debug visual (solo si necesitas verlo en el error)
-// if ($uri !== '/api/v1/health') { Response::notFound("Debug: uri=$uri, resource=$resource, id=$id"); }
+$resource = $segments[2] ?? ''; 
+$id       = $segments[3] ?? null; 
+$action   = $segments[4] ?? null; 
 
-// ── Verificación de Prefijo ───────────────────
+// ── Validación de Seguridad ───────────────────
 if (($segments[0] ?? '') !== 'api' || ($segments[1] ?? '') !== 'v1') {
     Response::notFound("Endpoint no encontrado: " . $uri);
+}
+
+// AHORA EL MATCH DE AUTH FUNCIONARÁ:
+if ($resource === 'auth') {
+    $ctrl = new AuthController();
+    match (true) {
+        $method === 'POST' && $id === 'login'    => $ctrl->login(),
+        $method === 'POST' && $id === 'register' => $ctrl->register(),
+        // ... resto de rutas
+        default => Response::notFound("Auth endpoint '{$id}' no encontrado"),
+    };
 }
 
 // ── Health ────────────────────────────────────
