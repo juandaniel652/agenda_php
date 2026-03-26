@@ -24,13 +24,10 @@ class Session
         }
 
         // dirname(__DIR__, 2) sube dos niveles: de 'app/Core' a la raíz 'api/'
-        $config = require dirname(__DIR__, 2) . '/config/env.php';
-        $db     = $config['db'];
-
-        $dsn = match ($db['driver']) {
-            'pgsql'  => "pgsql:host={$db['host']};port={$db['port']};dbname={$db['name']}",
-            default  => "mysql:host={$db['host']};port={$db['port']};dbname={$db['name']};charset={$db['charset']}",
-        };
+        $config = require '/home2/androsnet/public_html/api/config/env.php';
+        $db = $config['database'];
+        // Host suele ser 'localhost' en cPanel, pero el user/pass llevan prefijo
+        $dsn = "mysql:host={$db['host']};dbname={$db['dbname']};charset=utf8mb4";
 
         try {
             self::$instance = new PDO($dsn, $db['user'], $db['password'], [
