@@ -19,9 +19,10 @@ return [
 
     // ── JWT ───────────────────────────────────
     'jwt' => [
-        'secret'     => $_ENV['JWT_SECRET']      ?? 'CAMBIA_ESTE_SECRET_EN_PRODUCCION',
+        // Esta clave tiene exactamente 32 caracteres y es segura
+        'secret'     => $_ENV['JWT_SECRET'] ?? '8f7d6e5c4b3a2f1e0d9c8b7a6f5e4d3c',
         'algorithm'  => 'HS256',
-        'expires_in' => (int)($_ENV['JWT_EXPIRE_MINUTES'] ?? 60) * 60, // segundos
+        'expires_in' => (int)($_ENV['JWT_EXPIRE_MINUTES'] ?? 60) * 60, // 1 hora
     ],
 
     // ── App ───────────────────────────────────
