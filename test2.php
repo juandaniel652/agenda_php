@@ -1,12 +1,10 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
+$autoload = __DIR__ . '/vendor/autoload.php';
 
-use App\Core\Response;
+echo "ruta autoload: " . realpath($autoload) . "<br>";
+echo "existe autoload: " . (file_exists($autoload) ? 'SI' : 'NO') . "<br>";
 
-$response = new Response([
-    "status" => "ok",
-    "mensaje" => "API funcionando"
-]);
+require $autoload;
 
-$response->send();
+echo "autoload cargado OK";
