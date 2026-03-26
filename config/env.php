@@ -33,7 +33,10 @@ return [
 
     // ── CORS ──────────────────────────────────
     'cors' => [
-        'allowed_origins' => explode(',', $_ENV['CORS_ORIGINS'] ?? '*'),
+        'allowed_origins' => [
+            'https://andros-net.com.ar', // <--- Dominio principal
+            'http://localhost:5173',      // Por si sigues probando en local con Vite
+        ],
     ],
 
 ];

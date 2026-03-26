@@ -143,10 +143,10 @@ class Validator
     /**
      * Factory: parsea el body JSON de la request actual
      */
-    public static function fromBody(): static
-    {
-        $body = json_decode(file_get_contents('php://input'), true) ?? [];
-        return new static($body);
+    public static function fromBody(): self {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true) ?? [];
+        return new self($data);
     }
 
     /**
