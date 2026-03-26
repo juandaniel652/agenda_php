@@ -1,14 +1,13 @@
 <?php
-
-$autoload = __DIR__ . '/vendor/autoload.php';
-
-echo "ruta autoload: " . realpath($autoload) . "<br>";
-echo "existe autoload: " . (file_exists($autoload) ? 'SI' : 'NO') . "<br>";
-
+// Simular exactamente lo que hace index.php
+$autoload = '/home2/androsnet/public_html/api/vendor/autoload.php';
 require $autoload;
 
-echo "autoload cargado OK";
+// Ver qué paths tiene registrados DESPUÉS de cargar
+$loader = include $autoload;
+$prefixes = $loader->getPrefixesPsr4();
 
-use App\Core\Response;
-$r = new Response();
-echo "Response: OK<br>";
+echo '<pre>';
+echo "PSR4 registrados:\n";
+print_r($prefixes);
+echo '</pre>';
