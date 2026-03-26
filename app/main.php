@@ -34,27 +34,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// ── Parsear URI (Versión Robusta para cPanel) ─────────────────
+// ── Parsear URI ───────────────────────────────
 $method = $_SERVER['REQUEST_METHOD'];
 $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri    = rtrim($uri, '/');
 
-// Buscamos dónde empieza el estándar /api/v1/
+// Limpiamos para que empiece siempre en /api/v1
 $pos = strpos($uri, '/api/v1');
 if ($pos !== false) {
-    // Cortamos todo lo que haya antes de /api/v1
     $uri = substr($uri, $pos); 
 }
 
-// Ahora $uri es siempre "/api/v1/recurso/accion"
+// Convertimos a array: ["api", "v1", "auth", "login"]
 $segments = array_values(array_filter(explode('/', $uri)));
 
-// Verificación de Debug para ti (puedes borrar esto luego)
-// if ($uri === '/api/v1/health') { (new HealthController())->check(); }
+// --- AJUSTE DE ÍNDICES AQUÍ ---
+$resource = $segments[2] ?? ''; // Debe ser 'auth', 'clientes', etc.
+$id       = $segments[3] ?? null; // Debe ser 'login', 'register' o un ID (123)
+$action   = $segments[4] ?? null; // Debe ser 'cancelar', 'estado', etc.
 
-$resource = $segments[2] ?? ''; // 'auth'
-$id       = $segments[3] ?? ''; // 'login'
-$action   = $segments[4] ?? null;
+// Debug visual (solo si necesitas verlo en el error)
+// if ($uri !== '/api/v1/health') { Response::notFound("Debug: uri=$uri, resource=$resource, id=$id"); }
+
+// ── Verificación de Prefijo ───────────────────
+if (($segments[0] ?? '') !== 'api' || ($segments[1] ?? '') !== 'v1') {
+    Response::notFound("Endpoint no encontrado: " . $uri);
+}
 
 // ── Health ────────────────────────────────────
 // Python: prefix="/health" → GET /api/v1/health
