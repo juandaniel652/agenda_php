@@ -74,8 +74,16 @@ class Response
      */
     public static function setHeaders(): void
     {
-        $config  = require dirname(__DIR__, 1) . '/config/env.php';
-        $origins = $config['cors']['allowed_origins'];
+        // Subimos 2 niveles: de app/Core/ a la raíz api/
+        $configPath = '/home2/androsnet/public_html/api/config/env.php';
+
+        if (!file_exists($configPath)) {
+            // Backup por si acaso la ruta falla, para no romper la ejecución
+            return; 
+        }
+
+        $config  = require $configPath;
+        $origins = $config['cors']['allowed_origins'] ?? ['*'];
         $origin  = $_SERVER['HTTP_ORIGIN'] ?? '';
 
         if (in_array('*', $origins) || in_array($origin, $origins)) {
