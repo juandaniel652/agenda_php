@@ -1,21 +1,4 @@
 <?php
-// ─────────────────────────────────────────────
-//  app/core/Email.php
-//  Espejo EXACTO de app/core/email.py
-//
-//  Python usaba: fastapi-mail → Gmail SMTP puerto 587, STARTTLS
-//  PHP usa:      PHPMailer (mismo protocolo, misma config)
-//
-//  Requiere en composer.json:
-//    "phpmailer/phpmailer": "^6.9"
-//
-//  Requiere en .env (mismas variables que Python):
-//    MAIL_USERNAME=tu@gmail.com
-//    MAIL_PASSWORD=tu_app_password_de_gmail
-//    MAIL_FROM=tu@gmail.com
-//    FRONTEND_URL=https://tu-frontend.com
-// ─────────────────────────────────────────────
-
 namespace App\Core;
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -24,59 +7,56 @@ use PHPMailer\PHPMailer\Exception as MailException;
 
 class Email
 {
-    /**
-     * Equivalente a send_reset_email(email: EmailStr, token: str) en email.py
-     *
-     * Python:
-     *   reset_link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
-     *   html = f"<h2>Recuperar contraseña</h2>..."
-     *   message = MessageSchema(subject="Recuperación de contraseña", ...)
-     *   await fm.send_message(message)
-     */
     public static function sendResetEmail(string $email, string $token): void
     {
-        // Mismas variables de entorno que Python (settings.MAIL_* → $_ENV['MAIL_*'])
-        $username    = $_ENV['MAIL_USERNAME'] ?? null;
-        $password    = $_ENV['MAIL_PASSWORD'] ?? null;
-        $from        = $_ENV['MAIL_FROM']     ?? $username;
-        $frontendUrl = $_ENV['FRONTEND_URL']  ?? '';
+        // 1. Cargamos la configuración desde env.php
+        $config = require dirname(__DIR__, 2) . '/config/env.php';
+        $mailCfg = $config['mail'];
+        $appCfg  = $config['app'];
 
-        if (!$username || !$password) {
-            throw new \RuntimeException('Configuración de email incompleta (MAIL_USERNAME / MAIL_PASSWORD)');
-        }
+        // 2. Construimos el link usando la URL de andros-net.com.ar
+        // El link será: https://andros-net.com.ar/agenda/html/reset-password.html?token=...
+        $frontendUrl = rtrim($appCfg['frontend_url'], '/');
+        $resetLink = $frontendUrl . '/reset-password.html?token=' . $token;
 
-        // Mismo link que Python: f"{settings.FRONTEND_URL}/reset-password?token={token}"
-        $resetLink = rtrim($frontendUrl, '/') . '/reset-password?token=' . $token;
-
-        // Mismo HTML que Python
         $html = "
-            <h2>Recuperar contraseña</h2>
-            <p>Haz clic en el siguiente enlace para cambiar tu contraseña:</p>
-            <a href=\"{$resetLink}\">{$resetLink}</a>
-            <p>Este enlace expira en 1 hora.</p>
+            <div style='font-family: sans-serif; color: #333;'>
+                <h2>Recuperar contraseña</h2>
+                <p>Haz clic en el siguiente botón para cambiar tu contraseña:</p>
+                <div style='margin: 20px 0;'>
+                    <a href='{$resetLink}' 
+                       style='background: #005691; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;'>
+                       Cambiar Contraseña
+                    </a>
+                </div>
+                <p>O copia y pega este enlace:</p>
+                <p style='font-size: 12px; color: #666;'>{$resetLink}</p>
+                <hr>
+                <p style='font-size: 11px; color: #999;'>Este enlace expira en 1 hora. Si no solicitaste esto, ignora este correo.</p>
+            </div>
         ";
 
         $mail = new PHPMailer(true);
 
         try {
-            // Misma config que Python:
-            // MAIL_SERVER="smtp.gmail.com", MAIL_PORT=587, MAIL_STARTTLS=True
+            // Configuración del Servidor SMTP de tu Hosting
             $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';
+            $mail->Host       = $mailCfg['host'];
             $mail->SMTPAuth   = true;
-            $mail->Username   = $username;
-            $mail->Password   = $password;
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // STARTTLS = puerto 587
-            $mail->Port       = 587;
+            $mail->Username   = $mailCfg['username'];
+            $mail->Password   = $mailCfg['password'];
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // Para puerto 465 se usa SMTPS
+            $mail->Port       = $mailCfg['port'];
             $mail->CharSet    = 'UTF-8';
 
-            // Mismo subject y recipients que Python
-            $mail->setFrom($from, 'Agenda');
+            // Remitente y Destinatario
+            $mail->setFrom($mailCfg['from_email'], $mailCfg['from_name']);
             $mail->addAddress($email);
-            $mail->Subject  = 'Recuperación de contraseña';
+
+            $mail->Subject = 'Recuperación de contraseña - S-Link';
             $mail->isHTML(true);
-            $mail->Body     = $html;
-            $mail->AltBody  = "Usá este link para cambiar tu contraseña: {$resetLink} (expira en 1 hora)";
+            $mail->Body    = $html;
+            $mail->AltBody = "Usa este link para cambiar tu contraseña: {$resetLink}";
 
             $mail->send();
 

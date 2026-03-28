@@ -30,6 +30,7 @@ return [
         'env'      => $_ENV['APP_ENV']  ?? 'development',
         'debug'    => ($_ENV['APP_DEBUG'] ?? 'true') === 'true',
         'base_url' => $_ENV['APP_URL']  ?? 'http://localhost',
+        'frontend_url' => 'https://andros-net.com.ar/agenda/html',
     ],
 
     // ── CORS ──────────────────────────────────
@@ -38,6 +39,15 @@ return [
             'https://andros-net.com.ar', // <--- Dominio principal
             'http://localhost:5173',      // Por si sigues probando en local con Vite
         ],
+    ],
+
+    'mail' => [
+        'host'       => 'mail.andros-net.com.ar', // Usualmente es así
+        'port'       => 465,                     // SSL
+        'username'   => 'no-reply@andros-net.com.ar', 
+        'password'   => '_BMgl7J1GHG)',
+        'from_email' => 'no-reply@andros-net.com.ar',
+        'from_name'  => 'S-Link Agenda',
     ],
 
 ];
