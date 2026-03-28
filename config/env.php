@@ -45,7 +45,7 @@ return [
         'host'       => 'mail.andros-net.com.ar', // Usualmente es así
         'port'       => 465,                     // SSL
         'username'   => 'no-reply@andros-net.com.ar', 
-        'password'   => '_BMgl7J1GHG)',
+        'password'   => 'PM?8+?sU.rF}',
         'from_email' => 'no-reply@andros-net.com.ar',
         'from_name'  => 'S-Link Agenda',
     ],
