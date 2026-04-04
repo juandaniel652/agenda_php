@@ -19,14 +19,16 @@ class ClienteRepository
 
     public function findAll(int $skip = 0, int $limit = 100): array
     {
-        $stmt = $this->db->prepare('SELECT * FROM clientes ORDER BY apellido, nombre LIMIT ? OFFSET ?');
+        // Añadimos: WHERE activo = 1
+        $stmt = $this->db->prepare('SELECT * FROM clientes WHERE activo = 1 ORDER BY apellido, nombre LIMIT ? OFFSET ?');
         $stmt->execute([$limit, $skip]);
         return $stmt->fetchAll();
     }
 
     public function findById(string $id): ?array
     {
-        $stmt = $this->db->prepare('SELECT * FROM clientes WHERE id = ? LIMIT 1');
+        // Añadimos: AND activo = 1
+        $stmt = $this->db->prepare('SELECT * FROM clientes WHERE id = ? AND activo = 1 LIMIT 1');
         $stmt->execute([$id]);
         return $stmt->fetch() ?: null;
     }
@@ -50,7 +52,8 @@ class ClienteRepository
         $q    = '%' . $query . '%';
         $stmt = $this->db->prepare('
             SELECT * FROM clientes
-            WHERE nombre LIKE ? OR apellido LIKE ? OR email LIKE ? OR numero_cliente LIKE ? OR telefono LIKE ?
+            WHERE (nombre LIKE ? OR apellido LIKE ? OR email LIKE ? OR numero_cliente LIKE ? OR telefono LIKE ?)
+            AND activo = 1
             ORDER BY apellido, nombre
             LIMIT 50
         ');
@@ -107,11 +110,10 @@ class ClienteRepository
         return $this->findById($id);
     }
 
-    public function delete(string $id): bool
-    {
-        $stmt = $this->db->prepare('DELETE FROM clientes WHERE id = ?');
-        $stmt->execute([$id]);
-        return $stmt->rowCount() > 0;
+    public function delete($id) {
+        // Solo cambiamos el estado, no borramos la fila
+        $stmt = $this->db->prepare("UPDATE clientes SET activo = 0 WHERE id = ?");
+        return $stmt->execute([$id]);
     }
 
     private function generateUuid(): string
