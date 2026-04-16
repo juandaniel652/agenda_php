@@ -151,46 +151,52 @@ class TecnicoRepository
      */
     public function updateConHorarios(string $id, array $data, ?array $horarios): array
     {
+        // --- LÓGICA SENIOR: Auto-decodificar si horarios llega como string JSON ---
+        if (is_string($horarios)) {
+            $horarios = json_decode($horarios, true);
+        }
+    
         $this->db->beginTransaction();
-
+    
         try {
-            // Actualizar campos básicos si vienen
+            // 1. Actualizar campos básicos
             if (!empty($data)) {
                 $fields  = [];
                 $values  = [];
                 $allowed = ['nombre', 'apellido', 'email', 'telefono', 'imagen_url', 'activo', 'duracion_turno_min'];
-
+    
                 foreach ($allowed as $field) {
                     if (array_key_exists($field, $data) && $data[$field] !== null) {
                         $fields[] = "{$field} = ?";
                         $values[] = $field === 'email' ? strtolower(trim($data[$field])) : $data[$field];
                     }
                 }
-
+    
                 if (!empty($fields)) {
                     $values[] = $id;
                     $this->db->prepare('UPDATE tecnicos SET ' . implode(', ', $fields) . ' WHERE id = ?')
                              ->execute($values);
                 }
             }
-
-            // Si vienen horarios → REEMPLAZAR (igual que Python: delete + insert)
+    
+            // 2. REEMPLAZAR HORARIOS (Ahora $horarios ya es un array real)
             if ($horarios !== null) {
+                // Borramos los anteriores
                 $this->db->prepare('DELETE FROM tecnico_disponibilidad WHERE tecnico_id = ?')
                          ->execute([$id]);
-
+    
+                // Insertamos los nuevos
                 if (!empty($horarios)) {
                     $this->insertHorarios($id, $horarios);
                 }
             }
-
+    
             $this->db->commit();
-
         } catch (\Exception $e) {
             $this->db->rollBack();
             throw $e;
         }
-
+    
         return $this->findById($id);
     }
 
