@@ -40,6 +40,15 @@ class TecnicoController
     // require_roles(["admin"])
     public function store(): never
     {
+
+        $id = $_POST['id'] ?? null;
+        $method = $_POST['_method'] ?? 'POST';
+
+        if (($id && $method === 'PUT') || ($id && $_SERVER['REQUEST_METHOD'] === 'POST')) {
+            $this->update($id); // Redirigir a la lógica de actualización
+        }
+        // ---------------------------------------------
+
         Deps::requireRoles(['admin']);
 
         // Validar campos requeridos del form
@@ -99,12 +108,13 @@ class TecnicoController
         }
 
         $data = [];
+        $allowed = ['nombre', 'apellido', 'telefono', 'email', 'duracion_turno_min'];
 
-        // Solo incluir campos que vienen en el form (igual que exclude_unset=True en Python)
-        foreach (['nombre', 'apellido', 'telefono', 'email', 'duracion_turno_min'] as $field) {
+        foreach ($allowed as $field) {
+            // Usamos isset para que si el campo no viene, no lo pise (exclude_unset)
             if (isset($_POST[$field])) {
-                $data[$field] = $field === 'duracion_turno_min'
-                    ? (int)$_POST[$field]
+                $data[$field] = $field === 'duracion_turno_min' 
+                    ? (int)$_POST[$field] 
                     : $_POST[$field];
             }
         }
@@ -117,8 +127,10 @@ class TecnicoController
             $data['horarios'] = $horariosList;
         }
 
+        // Llamar al service con el ID que capturamos
         $updated = $this->service->actualizar($id, $data);
         Response::success($updated);
+    
     }
 
     // DELETE /api/v1/tecnicos/{id}
